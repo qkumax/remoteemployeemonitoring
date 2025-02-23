@@ -1,52 +1,61 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { Container, Card, Typography, Button } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { Container, Grid, Paper, Typography, Box } from "@mui/material";
+import ActivityChart from "../components/ActivityChart";
+import ActivityTable from "../components/ActivityTable";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const Dashboard = () => {
-    const [stats, setStats] = useState({ totalWorkTime: 0, topApps: [] });
-    const [user, setUser] = useState(null);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        axios.get("http://localhost:4444/activity/stats", {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        })
-        .then((res) => setStats(res.data))
-        .catch((err) => console.error("Ошибка загрузки статистики:", err));
-    }, []);
-
-    useEffect(() => {
-        axios.get("/auth/me", {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-        })
-        .then((res) => setUser(res.data))
-        .catch(() => {
-            localStorage.removeItem("token"); // Удаляем токен если он недействителен
-            navigate("/");
-        });
-    }, [navigate]);
-
-    const handleLogout = () => {
-        localStorage.removeItem("token"); // Удаляем токен
-        navigate("/"); // Перенаправляем на страницу входа
-    };
-
-    if (!user) return <Typography>Загрузка...</Typography>;
-
     return (
-        <Container>
-            <Typography variant="h4">📊 Дашборд продуктивности</Typography>
-            <Card sx={{ padding: 2, marginTop: 2 }}>
-                <Typography>⏳ Общее время работы: {stats.totalWorkTime} мин</Typography>
-            </Card>
+        <>
+            <Navbar />  {/* ✅ Добавлен Navbar */}
+            <Box sx={{ display: "flex" }}>
+                <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+                    <Container>
+                        <Typography variant="h4" gutterBottom>
+                            📊 Панель управления
+                        </Typography>
 
-            <Typography variant="h4" sx={{ marginTop: 4 }}>👤 Привет, {user.fullName}!</Typography>
-            <Typography>Твоя роль: {user.role}</Typography>
-            <Button variant="contained" color="secondary" onClick={handleLogout} sx={{ marginTop: 2 }}>
-                Выйти
-            </Button>
-        </Container>
+                        <Grid container spacing={3}>
+                            {/* Карточка общей статистики */}
+                            <Grid item xs={12} md={4}>
+                                <Paper sx={{ p: 3, textAlign: "center" }}>
+                                    <Typography variant="h6">⏳ Общее время работы</Typography>
+                                    <Typography variant="h4">8 ч 15 мин</Typography>
+                                </Paper>
+                            </Grid>
+
+                            {/* Карточка количества задач */}
+                            <Grid item xs={12} md={4}>
+                                <Paper sx={{ p: 3, textAlign: "center" }}>
+                                    <Typography variant="h6">📌 Выполненные задачи</Typography>
+                                    <Typography variant="h4">34</Typography>
+                                </Paper>
+                            </Grid>
+
+                            {/* Карточка продуктивности */}
+                            <Grid item xs={12} md={4}>
+                                <Paper sx={{ p: 3, textAlign: "center" }}>
+                                    <Typography variant="h6">🚀 Продуктивность</Typography>
+                                    <Typography variant="h4">82%</Typography>
+                                </Paper>
+                            </Grid>
+
+                            {/* График активности */}
+                            <Grid item xs={12}>
+                                <ActivityChart />
+                            </Grid>
+
+                            {/* Таблица активности */}
+                            <Grid item xs={12}>
+                                <ActivityTable />
+                            </Grid>
+                        </Grid>
+                    </Container>
+                </Box>
+            </Box>
+            <Footer />  {/* ✅ Добавлен Footer */}
+        </>
     );
 };
 

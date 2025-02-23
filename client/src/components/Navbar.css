@@ -1,0 +1,43 @@
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 40px;
+    background-color: white;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .nav-links {
+    list-style: none;
+    display: flex;
+    gap: 30px; /* Increase spacing between items */
+    padding: 0;
+  }
+  
+  .nav-links li {
+    display: inline;
+  }
+  
+  .nav-links a {
+    text-decoration: none;
+    color: black;
+    font-size: 16px;
+  }
+  
+  .nav-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .sign-in, .register {
+    padding: 8px 16px;
+    border: 1px solid black;
+    cursor: pointer;
+    background: white;
+  }
+  
+  .register {
+    background: black;
+    color: white;
+  }
+  

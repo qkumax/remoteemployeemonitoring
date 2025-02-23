@@ -1,0 +1,52 @@
+.profile-container {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .profile-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .profile-content {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .profile-left {
+    width: 30%;
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+  }
+  
+  .profile-picture {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #f5a, #aaf);
+    border-radius: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .profile-info p, .profile-stats p {
+    margin: 5px 0;
+  }
+  
+  .profile-right {
+    width: 65%;
+  }
+  
+  .projects, .task-status, .closed-tasks {
+    background: #f0f0f0;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .project-card, .task-card {
+    background: #ddd;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 5px;
+  }
+  

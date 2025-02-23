@@ -1,33 +1,33 @@
- import mongoose from "mongoose";
+import mongoose from "mongoose";
 
- const Userschema = new mongoose.Schema({
-    fullName: {
-        type:String,
-        required: true,
-    },
-
+const UserSchema = new mongoose.Schema({
     email: {
-        type:String,
+        type: String,
         required: true,
         unique: true,
     },
-
     passwordHash: {
         type: String,
         required: true,
     },
-
-    avatarURl: String,
-
+    fullName: {
+        type: String,
+    },
+    position: {
+        type: String,
+    },
+    avatarURL: String,
     role: { 
         type: String, 
         enum: ["employee", "admin"], 
         default: "employee" 
     },
-},
-{
-timestaps:true,
-},
-);
+    profileCompleted: {
+        type: Boolean,
+        default: false,
+    }
+}, {
+    timestamps: true, // исправлено
+});
 
-export default mongoose.model('User', Userschema);
+export default mongoose.model('User', UserSchema);
