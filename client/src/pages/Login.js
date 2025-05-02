@@ -19,7 +19,7 @@ const Login = () => {
         try {
             const { data } = await axios.post("http://localhost:4444/auth/login", { email, password });
             localStorage.setItem("token", data.token);
-            navigate("/dashboard");
+            navigate("/profile");
         } catch (err) {
             setError(err.response?.data?.message || "Ошибка сервера");
             setLoading(false);
