@@ -1,15 +1,17 @@
-import mongoose from "mongoose";
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/database.js';
+import User from './User.js';
 
-const ActivitySchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    startTime: { type: Date, default: Date.now }, 
-    endTime: { type: Date }, 
-    keyboardActivity: { type: Number, default: 0 }, 
-    mouseActivity: { type: Number, default: 0 }, 
-    usedApps: [{ name: String, duration: Number }], 
-    screenshots: [{ url: String, timestamp: Date }] 
+const ActivityLog = sequelize.define('ActivityLog', {
+  startTime: { type: DataTypes.DATE, allowNull: false },
+  endTime: { type: DataTypes.DATE, allowNull: true  },
+  keyboardActivity: { type: DataTypes.INTEGER, defaultValue: 0 },
+  mouseActivity: { type: DataTypes.INTEGER, defaultValue: 0 },
+  isIdle: { type: DataTypes.BOOLEAN, defaultValue: false },
+  idleDuration: { type: DataTypes.INTEGER, defaultValue: 0 }
 });
 
-const ActivityLog = mongoose.model("ActivityLog", ActivitySchema);
+User.hasMany(ActivityLog, { foreignKey: 'userId' });
+ActivityLog.belongsTo(User, { foreignKey: 'userId' });
 
 export default ActivityLog;

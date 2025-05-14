@@ -5,7 +5,7 @@ body, html {
     height: 100%;
   }
   
-  /* Sign-in container */
+
   .signin-container {
     height: 100vh;
     display: flex;
@@ -16,7 +16,6 @@ body, html {
     overflow: hidden;
   }
   
-  /* Apply background image */
   .signin-container::before {
     content: "";
     position: absolute;

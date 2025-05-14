@@ -25,7 +25,7 @@ const Register = () => {
 
         try {
             await axios.post("http://localhost:4444/auth/register", { email, password });
-            navigate("/dashboard");  // ✅ После регистрации переход в Task Manager
+            navigate("/complete-profile");  
         } catch (err) {
             setError(err.response?.data?.message || "11Ошибка сервера");
             setLoading(false);

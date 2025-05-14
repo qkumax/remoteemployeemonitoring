@@ -1,86 +1,155 @@
-import ActivityLog from "../models/ActivityLog.js";
+import { ActivityLog, UsedApp, Screenshot } from "../models/index.js";
+import { generateActivityPdf } from '../utils/pdfGenerator.js';
+import { Op } from "sequelize";
 
+
+// 🚀 Начать сессию
 export const startSession = async (req, res) => {
-    try {
-        const newActivity = new ActivityLog({
-            userId: req.userId,
-            startTime: new Date(),
-            keyboardActivity: 0,
-            mouseActivity: 0,
-            usedApps: [],
-            screenshots: []
-        });
+  try {
+    const newActivity = await ActivityLog.create({
+      userId: req.userId,
+      startTime: new Date(),
+      keyboardActivity: 0,
+      mouseActivity: 0,
+      isIdle: false,
+      idleDuration: 0
+    });
 
-        await newActivity.save();
-
-        res.status(201).json({ message: "Сессия работы начата", activityId: newActivity._id });
-    } catch (err) {
-        console.error("Ошибка при запуске сессии:", err);
-        res.status(500).json({ message: "Ошибка при запуске сессии" });
-    }
+    res.status(201).json({ message: "Сессия работы начата", activityId: newActivity.id });
+  } catch (err) {
+    console.error("Ошибка при запуске сессии:", err);
+    res.status(500).json({ message: "Ошибка при запуске сессии" });
+  }
 };
 
+// ✅ Завершить сессию + сохранить usedApps и screenshots
 export const endSession = async (req, res) => {
-    try {
-        console.log("🔍 Данные, полученные на сервере:", req.body);
+  try {
+    const {
+      activityId,
+      keyboardActivity,
+      mouseActivity,
+      isIdle,
+      idleDuration,
+      usedApps,
+      screenshots
+    } = req.body;
 
-        const { activityId, keyboardActivity, mouseActivity, usedApps, screenshots } = req.body;
-
-        if (!activityId) {
-            return res.status(400).json({ message: "Ошибка: activityId обязателен" });
-        }
-
-        const updatedActivity = await ActivityLog.findByIdAndUpdate(
-            activityId,
-            {
-                endTime: new Date(),
-                duration: Math.round((Date.now() - new Date(activityId.startTime)) / 60000),
-                keyboardActivity: keyboardActivity ?? 0,
-                mouseActivity: mouseActivity ?? 0,
-                usedApps: usedApps ?? [],
-                screenshots: screenshots ?? []
-            },
-            { new: true } // ✅ Вернуть обновлённый документ
-        );
-
-        if (!updatedActivity) {
-            return res.status(404).json({ message: "Ошибка: Сессия не найдена" });
-        }
-
-        console.log("✅ Обновлённые данные перед сохранением:", updatedActivity);
-
-        res.json({
-            message: "Сессия завершена",
-            activity: updatedActivity
-        });
-    } catch (err) {
-        console.error("❌ Ошибка при завершении сессии:", err);
-        res.status(500).json({ message: "Ошибка при завершении сессии" });
+    if (!activityId) {
+      return res.status(400).json({ message: "activityId обязателен" });
     }
+
+    const activity = await ActivityLog.findByPk(activityId);
+
+    if (!activity || activity.userId !== req.userId) {
+      return res.status(404).json({ message: "Сессия не найдена" });
+    }
+
+    activity.endTime = new Date();
+    activity.keyboardActivity = keyboardActivity ?? activity.keyboardActivity;
+    activity.mouseActivity = mouseActivity ?? activity.mouseActivity;
+    activity.isIdle = isIdle ?? activity.isIdle;
+    activity.idleDuration = idleDuration ?? activity.idleDuration;
+
+    await activity.save();
+
+    // Удалим старые usedApps и screenshots
+    await UsedApp.destroy({ where: { activityLogId: activity.id } });
+    await Screenshot.destroy({ where: { activityLogId: activity.id } });
+
+    // Сохраняем usedApps
+    if (Array.isArray(usedApps)) {
+      await Promise.all(
+        usedApps.map(app =>
+          UsedApp.create({
+            name: app.name,
+            duration: app.duration,
+            activityLogId: activity.id
+          })
+        )
+      );
+    }
+
+    // Сохраняем screenshots
+    if (Array.isArray(screenshots)) {
+      await Promise.all(
+        screenshots.map(shot =>
+          Screenshot.create({
+            url: shot.url,
+            timestamp: shot.timestamp,
+            activityLogId: activity.id
+          })
+        )
+      );
+    }
+
+    res.json({ message: "Сессия завершена и данные сохранены", activityId: activity.id });
+  } catch (err) {
+    console.error("Ошибка при завершении сессии:", err);
+    res.status(500).json({ message: "Ошибка при завершении сессии" });
+  }
 };
 
-
-
-
+// 📄 Получить все логи активности пользователя
 export const getActivityLogs = async (req, res) => {
-    try {
-        const logs = await ActivityLog.find({ userId: req.userId }).sort({ startTime: -1 });
+  try {
+    const logs = await ActivityLog.findAll({
+      where: { userId: req.userId },
+      order: [["startTime", "DESC"]],
+      include: [UsedApp, Screenshot]
+    });
 
-        res.json(logs);
-    } catch (err) {
-        console.error("Ошибка при получении логов:", err);
-        res.status(500).json({ message: "Ошибка сервера" });
-    }
+    res.json(logs);
+  } catch (err) {
+    console.error("Ошибка при получении логов:", err);
+    res.status(500).json({ message: "Ошибка сервера" });
+  }
+};
+
+// 📅 Получить активность за текущий день
+export const getTodayActivity = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const logs = await ActivityLog.findAll({
+      where: {
+        userId: req.userId,
+        startTime: { [Op.gte]: today }
+      },
+      order: [["startTime", "DESC"]],
+      include: [UsedApp, Screenshot]
+    });
+
+    res.json(logs);
+  } catch (err) {
+    console.error("Ошибка при получении активности за день:", err);
+    res.status(500).json({ message: "Ошибка сервера" });
+  }
 };
 
 
-export const getUserActivity = async (req, res) => {
-    try {
-        const logs = await ActivityLog.find({ userId: req.userId }).sort({ startTime: -1 });
+// 📥 Скачать PDF по активности
+export const downloadActivityPdf = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-        res.json(logs);
-    } catch (err) {
-        console.error("Ошибка при получении активности пользователя:", err);
-        res.status(500).json({ message: "Ошибка при получении активности" });
+    const activity = await ActivityLog.findOne({
+      where: { id, userId: req.userId },
+      include: [UsedApp, Screenshot]
+    });
+
+    if (!activity) {
+      return res.status(404).json({ message: "Сессия не найдена" });
     }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=activity_${id}.pdf`);
+
+    generateActivityPdf(activity, activity.UsedApps, activity.Screenshots, res);
+  } catch (err) {
+    console.error("Ошибка при создании PDF:", err);
+    res.status(500).json({ message: "Ошибка сервера при генерации PDF" });
+  }
 };
+

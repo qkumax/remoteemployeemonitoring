@@ -5,9 +5,11 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
+import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
 import CompleteProfile from "./pages/CompleteProfile";
+import TaskManager from "./pages/TaskManager";
+import ActivityTracker from "./components/ActivityTracker";
 
 const theme = createTheme(); // ✅ Создаём тему Material UI
 
@@ -21,7 +23,8 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/complete-profile" element={<CompleteProfile />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/tasks" element={<TaskManager />} />
+                    <Route path="/analytics" element={<Analytics />} />
                     <Route path="/profile" element={<Profile />} />
                 </Routes>
             </Router>

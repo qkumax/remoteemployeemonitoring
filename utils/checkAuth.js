@@ -1,25 +1,25 @@
 import jwt from 'jsonwebtoken';
 
 export default (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    
-    console.log("Authorization Header:", authHeader); // Лог для отладки
+  const authHeader = req.headers.authorization;
 
-    if (!authHeader) {
-        return res.status(403).json({ message: "Нет доступа (отсутствует токен)" });
-    }
+  console.log("Authorization Header:", authHeader);
 
-    const token = authHeader.split(' ')[1]; // Достаём сам токен из "Bearer token_here"
+  if (!authHeader) {
+    return res.status(403).json({ message: "Нет доступа (отсутствует токен)" });
+  }
 
-    if (!token) {
-        return res.status(403).json({ message: "Некорректный токен" });
-    }
+  const token = authHeader.split(' ')[1]; 
 
-    try {
-        const decoded = jwt.verify(token, "diplomka"); // Убедитесь, что ключ совпадает с /auth/login
-        req.userId = decoded._id;
-        next(); // Передаём управление дальше
-    } catch (e) {
-        return res.status(403).json({ message: "Неверный или истёкший токен" });
-    }
+  if (!token) {
+    return res.status(403).json({ message: "Некорректный токен" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); // ✅ используем env
+    req.userId = decoded.id; // ✅ исправлено с _id на id
+    next();
+  } catch (e) {
+    return res.status(403).json({ message: "Неверный или истёкший токен" });
+  }
 };
