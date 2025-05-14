@@ -9,6 +9,7 @@ import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
 import CompleteProfile from "./pages/CompleteProfile";
 import TaskManager from "./pages/TaskManager";
+import ActivityTracker from "./components/ActivityTracker";
 
 const theme = createTheme(); // ✅ Создаём тему Material UI
 

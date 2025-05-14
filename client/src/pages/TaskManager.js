@@ -1,42 +1,40 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import '../components/Navbar.js';
-import '../components/Footer.js';
-import './TaskManager.css';
-
+import axios from "axios";
+import useActivityTracker from "../hooks/useActivityTracker";
+import "../components/Navbar.js";
+import "../components/Footer.js";
+import "./TaskManager.css";
 
 const ItemType = "TASK";
 
-// Task Component (Draggable)
 const Task = ({ task, moveTask, toggleTimer }) => {
   const [{ isDragging }, drag] = useDrag({
     type: ItemType,
     item: { id: task.id },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
+    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
   });
 
   return (
     <div ref={drag} className="task-box" style={{ opacity: isDragging ? 0.5 : 1 }}>
       <p>{task.title}</p>
       <span className={`priority ${task.priority.toLowerCase()}`}>{task.priority}</span>
-
-      {/* Timer for "In Progress" Tasks */}
       {task.status === "inprogress" && (
         <div className="timer-container">
           <span>⏳ {task.time}s</span>
           <button onClick={() => toggleTimer(task.id)}>
             {task.running ? "Stop" : "Start"}
           </button>
+          <div className="activity-stats">
+            <p>⌨️ {task.keyboardActivity || 0} | 🖱️ {task.mouseActivity || 0}</p>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-// Column Component (Drop Target)
 const Column = ({ title, status, tasks, moveTask, toggleTimer }) => {
   const [, drop] = useDrop({
     accept: ItemType,
@@ -53,15 +51,18 @@ const Column = ({ title, status, tasks, moveTask, toggleTimer }) => {
   );
 };
 
-// Main Dashboard Component
 const Dashboard = () => {
   const [tasks, setTasks] = useState([
     { id: 1, title: "CRM System Design", status: "todo", priority: "Medium" },
     { id: 2, title: "Statistics", status: "todo", priority: "Low" },
-    { id: 3, title: "Notifications", status: "inprogress", priority: "Low", time: 0, running: false },
-    { id: 4, title: "Task Types", status: "inprogress", priority: "Low", time: 0, running: false },
+    { id: 3, title: "Notifications", status: "inprogress", priority: "Low", time: 0, running: false, activityId: null },
+    { id: 4, title: "Task Types", status: "inprogress", priority: "Low", time: 0, running: false, activityId: null },
     { id: 5, title: "Todoshniki Design", status: "frozen", priority: "Low" },
   ]);
+
+  const token = localStorage.getItem("token");
+  const tracker = useActivityTracker();
+  const stopListeners = useRef(null);
 
   const moveTask = (taskId, newStatus) => {
     setTasks((prevTasks) =>
@@ -71,12 +72,50 @@ const Dashboard = () => {
     );
   };
 
-
-  const toggleTimer = (taskId) => {
+  const toggleTimer = async (taskId) => {
     setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId ? { ...task, running: !task.running } : task
-      )
+      prevTasks.map((task) => {
+        if (task.id !== taskId) return task;
+
+        if (!task.running) {
+          axios.post("http://localhost:4444/activity/start", {}, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((res) => {
+            stopListeners.current = tracker.start((stats) => {
+              setTasks((tasks) =>
+                tasks.map((t) =>
+                  t.id === taskId ? { ...t, keyboardActivity: stats.keyboardActivity, mouseActivity: stats.mouseActivity } : t
+                )
+              );
+            });
+            setTasks((tasks) =>
+              tasks.map((t) =>
+                t.id === taskId ? { ...t, running: true, activityId: res.data.activityId } : t
+              )
+            );
+          }).catch(console.error);
+        } else if (task.running && task.activityId) {
+          const activityData = tracker.stop();
+          stopListeners.current?.();
+
+          axios.post("http://localhost:4444/activity/end", {
+            activityId: task.activityId,
+            ...activityData,
+            usedApps: [],
+            screenshots: [],
+          }, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then(() => {
+            setTasks((tasks) =>
+              tasks.map((t) =>
+                t.id === taskId ? { ...t, running: false, activityId: null } : t
+              )
+            );
+          }).catch(console.error);
+        }
+
+        return task;
+      })
     );
   };
 
